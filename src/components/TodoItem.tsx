@@ -32,9 +32,10 @@ const TodoItem = ({
   const debouncedHandleUpdateTodo = debounce(handleUpdateTodo, 1000);
 
   return (
-    <div key={todo.id} className="flex items-center gap-2">
+    <div key={todo.id} className="flex items-center gap-4">
       <input
         placeholder="Mark as completed"
+        className="form-checkbox text-blue-600 h-6 w-6 border-gray-300 focus:ring-blue-500 focus:border-blue-500"
         type="checkbox"
         checked={todo.isCompleted}
         onChange={async (e) => {
@@ -44,19 +45,23 @@ const TodoItem = ({
         }}
       />
 
-      <input
-        type="text"
-        className="border border-gray-300 rounded-md px-2 py-1 bg-black"
-        value={t}
-        placeholder={todo.todo}
-        onChange={async (e) => {
-          setT(e.target.value);
+      {todo.isCompleted ? (
+        <p className="line-through text-gray-400 flex-1">{t}</p>
+      ) : (
+        <input
+          type="text"
+          className="bg-black text-white flex-1"
+          value={t}
+          placeholder={todo.todo}
+          onChange={async (e) => {
+            setT(e.target.value);
 
-          debouncedHandleUpdateTodo(todo.id, {
-            todo: e.target.value,
-          });
-        }}
-      />
+            debouncedHandleUpdateTodo(todo.id, {
+              todo: e.target.value,
+            });
+          }}
+        />
+      )}
 
       <button
         type="button"
@@ -64,7 +69,7 @@ const TodoItem = ({
           await deleteDoc(doc(db, "todos", todo.id));
           filterTodo(todo.id);
         }}
-        className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+        className="border-red-500 border hover:bg-red-700 text-white text-sm py-1 px-4 rounded"
       >
         Delete
       </button>
