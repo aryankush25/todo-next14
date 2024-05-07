@@ -1,15 +1,16 @@
 "use client";
 
 import { auth } from "@/services/firebase";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { onAuthStateChanged, signInWithEmailAndPassword } from "firebase/auth";
 import { useForm } from "@mantine/form";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function Login() {
   const router = useRouter();
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const form = useForm({
     mode: "uncontrolled",
     initialValues: {
@@ -24,6 +25,16 @@ export default function Login() {
     },
   });
 
+  useEffect(() => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push("/");
+      } else {
+        setIsLoading(false);
+      }
+    });
+  }, [router]);
+
   const handleLogin = async ({
     email,
     password,
@@ -31,7 +42,7 @@ export default function Login() {
     email: string;
     password: string;
   }) => {
-    setIsLoading(true);
+    setIsSubmitting(true);
     try {
       const userCredential = await signInWithEmailAndPassword(
         auth,
@@ -46,9 +57,13 @@ export default function Login() {
     } catch (error) {
       console.log("#### error", error);
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
+
+  if (isLoading) {
+    return <main>Loading...</main>;
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center p-24 ">
@@ -93,9 +108,9 @@ export default function Login() {
         <button
           className="bg-blue-500 hover:bg-blue-600 text-white rounded-md px-4 py-2 w-full"
           type="submit"
-          disabled={isLoading}
+          disabled={isSubmitting}
         >
-          {isLoading ? "Submitting..." : "Login"}
+          {isSubmitting ? "Submitting..." : "Login"}
         </button>
       </form>
     </main>
