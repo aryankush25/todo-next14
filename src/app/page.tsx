@@ -1,11 +1,11 @@
 "use client";
 
-import { auth, db } from "@/services/firebase";
-import { onAuthStateChanged } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { addDoc, collection, getDocs } from "firebase/firestore";
+import { useRouter } from "next/navigation";
 import { uniqBy } from "lodash";
+import { onAuthStateChanged } from "firebase/auth";
+import { addDoc, collection, getDocs } from "firebase/firestore";
+import { auth, db } from "@/services/firebase";
 import TodoItem from "@/components/TodoItem";
 
 interface Todo {
