@@ -34,9 +34,13 @@ export default function Home() {
     const querySnapshot = await getDocs(collection(db, "todos"));
 
     querySnapshot.forEach((doc) => {
-      setTodos((prev) =>
-        uniqBy([...prev, { id: doc.id, ...doc.data() } as Todo], "id")
-      );
+      const data = doc.data() as Todo;
+
+      if (data.createdBy === auth.currentUser?.uid) {
+        setTodos((prev) =>
+          uniqBy([...prev, { id: doc.id, ...doc.data() } as Todo], "id")
+        );
+      }
     });
 
     setIsLoading(false);
