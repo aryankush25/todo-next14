@@ -4,8 +4,15 @@ import { auth, db } from "@/services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { addDoc, collection, getDocs } from "firebase/firestore";
-import { uniqBy } from "lodash";
+import {
+  addDoc,
+  collection,
+  getDocs,
+  updateDoc,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
+import { debounce, uniqBy } from "lodash";
 
 interface Todo {
   id: string;
@@ -46,15 +53,38 @@ export default function Home() {
     });
   }, [router]);
 
-  const handleCreateNote = async () => {
+  const handleCreateTodo = async () => {
+    if (!todo) {
+      return;
+    }
+
     try {
       setIsCreating(true);
+
+      const currentUserId = auth.currentUser?.uid;
+
+      if (!currentUserId) {
+        return;
+      }
+
       const docRef = await addDoc(collection(db, "todos"), {
         todo,
         createdAt: new Date().toISOString(),
-        createdBy: auth.currentUser?.uid,
+        createdBy: currentUserId,
         isCompleted: false,
       });
+
+      setTodos((prev) => [
+        ...prev,
+        {
+          id: docRef.id,
+          todo,
+          createdAt: new Date().toISOString(),
+          isCompleted: false,
+          createdBy: currentUserId,
+        },
+      ]);
+
       console.log("Document written with ID: ", docRef.id);
     } catch (e) {
       console.error("Error adding document: ", e);
@@ -62,6 +92,24 @@ export default function Home() {
       setIsCreating(false);
     }
   };
+
+  const handleUpdateTodo = async (
+    id: string,
+    todo: {
+      isCompleted?: boolean;
+      todo?: string;
+    }
+  ) => {
+    await updateDoc(doc(db, "todos", id), {
+      ...todo,
+    });
+
+    setTodos((prev) => {
+      return prev.map((t) => (t.id === id ? { ...t, ...todo } : t));
+    });
+  };
+
+  const debouncedHandleUpdateTodo = debounce(handleUpdateTodo, 1000);
 
   if (isLoading) {
     return (
@@ -85,6 +133,47 @@ export default function Home() {
         Logout
       </button>
 
+      <div>
+        {todos.map((todo) => (
+          <div key={todo.id} className="flex items-center gap-2">
+            <input
+              placeholder="Mark as completed"
+              type="checkbox"
+              checked={todo.isCompleted}
+              onChange={async (e) => {
+                handleUpdateTodo(todo.id, {
+                  isCompleted: e.target.checked,
+                });
+              }}
+            />
+
+            <input
+              type="text"
+              className="border border-gray-300 rounded-md px-2 py-1 bg-black"
+              value={todo.todo}
+              placeholder={todo.todo}
+              onChange={async (e) => {
+                debouncedHandleUpdateTodo(todo.id, {
+                  todo: e.target.value,
+                });
+              }}
+            />
+
+            <button
+              type="button"
+              onClick={async () => {
+                await deleteDoc(doc(db, "todos", todo.id));
+
+                setTodos((prev) => prev.filter((t) => t.id !== todo.id));
+              }}
+              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Delete
+            </button>
+          </div>
+        ))}
+      </div>
+
       <div className="gap-2 flex justify-center items-center">
         <input
           value={todo}
@@ -96,7 +185,7 @@ export default function Home() {
 
         <button
           type="button"
-          onClick={handleCreateNote}
+          onClick={handleCreateTodo}
           disabled={isCreating}
           className="bg-blue-500 hover:bg-blue-600 text-white rounded-md px-4 py-2"
         >
