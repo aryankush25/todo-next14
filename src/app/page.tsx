@@ -38,12 +38,13 @@ export default function Home() {
         uniqBy([...prev, { id: doc.id, ...doc.data() } as Todo], "id")
       );
     });
+
+    setIsLoading(false);
   };
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        setIsLoading(false);
         getAllTodos();
       } else {
         router.push("/login");
@@ -94,54 +95,62 @@ export default function Home() {
   if (isLoading) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-between p-24">
-        Loading...
+        Fetching data...
       </main>
     );
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <h1>Todo App</h1>
+    <main className="flex min-h-screen flex-col p-24 max-w-6xl mx-auto">
+      <div className="flex items-center w-full justify-between">
+        <h1 className="text-4xl font-bold mb-8">Todo App</h1>
 
-      <button
-        type="button"
-        onClick={async () => {
-          await auth.signOut();
-        }}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-      >
-        Logout
-      </button>
-
-      <div>
-        {todos.map((todo) => (
-          <TodoItem
-            key={todo.id}
-            todo={todo}
-            filterTodo={filterTodo}
-            updateTodo={updateTodo}
-          />
-        ))}
+        <button
+          type="button"
+          onClick={async () => {
+            await auth.signOut();
+          }}
+          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Logout
+        </button>
       </div>
 
-      <div className="gap-2 flex justify-center items-center">
+      <div className="mt-8 flex gap-10 justify-between">
         <input
           value={todo}
           onChange={(e) => setTodo(e.target.value)}
           type="text"
           placeholder="Enter TODO"
-          className="border border-gray-300 rounded-md px-2 py-1 bg-black"
+          className="border border-gray-300 rounded-md px-2 py-1 bg-black text-white flex-1"
         />
 
         <button
           type="button"
           onClick={handleCreateTodo}
           disabled={isCreating}
-          className="bg-blue-500 hover:bg-blue-600 text-white rounded-md px-4 py-2"
+          className="bg-blue-500 hover:bg-blue-600 text-white rounded-md px-4 py-2 ml-2"
         >
           {isCreating ? "Creating..." : "Create"}
         </button>
       </div>
+
+      <h2 className="mt-16 text-2xl font-bold mb-8">All todos</h2>
+
+      {todos.length === 0 ? (
+        <p className="text-xl">No todos found</p>
+      ) : (
+        <div className="gap-4 flex flex-col">
+          {todos.map((todo) => (
+            <TodoItem
+              key={todo.id}
+              todo={todo}
+              filterTodo={filterTodo}
+              updateTodo={updateTodo}
+            />
+          ))}
+        </div>
+      )}
     </main>
   );
 }
