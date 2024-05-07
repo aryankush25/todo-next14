@@ -4,15 +4,9 @@ import { auth, db } from "@/services/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  addDoc,
-  collection,
-  getDocs,
-  updateDoc,
-  doc,
-  deleteDoc,
-} from "firebase/firestore";
-import { debounce, uniqBy } from "lodash";
+import { addDoc, collection, getDocs } from "firebase/firestore";
+import { uniqBy } from "lodash";
+import TodoItem from "@/components/TodoItem";
 
 interface Todo {
   id: string;
@@ -30,7 +24,11 @@ export default function Home() {
   const [todo, setTodo] = useState("");
   const [todos, setTodos] = useState<Todo[]>([]);
 
-  console.log(todos);
+  const filterTodo = (id: string) =>
+    setTodos((prev) => prev.filter((t) => t.id !== id));
+
+  const updateTodo = (id: string, todo: Todo) =>
+    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, ...todo } : t)));
 
   const getAllTodos = async () => {
     const querySnapshot = await getDocs(collection(db, "todos"));
@@ -93,24 +91,6 @@ export default function Home() {
     }
   };
 
-  const handleUpdateTodo = async (
-    id: string,
-    todo: {
-      isCompleted?: boolean;
-      todo?: string;
-    }
-  ) => {
-    await updateDoc(doc(db, "todos", id), {
-      ...todo,
-    });
-
-    setTodos((prev) => {
-      return prev.map((t) => (t.id === id ? { ...t, ...todo } : t));
-    });
-  };
-
-  const debouncedHandleUpdateTodo = debounce(handleUpdateTodo, 1000);
-
   if (isLoading) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-between p-24">
@@ -135,42 +115,12 @@ export default function Home() {
 
       <div>
         {todos.map((todo) => (
-          <div key={todo.id} className="flex items-center gap-2">
-            <input
-              placeholder="Mark as completed"
-              type="checkbox"
-              checked={todo.isCompleted}
-              onChange={async (e) => {
-                handleUpdateTodo(todo.id, {
-                  isCompleted: e.target.checked,
-                });
-              }}
-            />
-
-            <input
-              type="text"
-              className="border border-gray-300 rounded-md px-2 py-1 bg-black"
-              value={todo.todo}
-              placeholder={todo.todo}
-              onChange={async (e) => {
-                debouncedHandleUpdateTodo(todo.id, {
-                  todo: e.target.value,
-                });
-              }}
-            />
-
-            <button
-              type="button"
-              onClick={async () => {
-                await deleteDoc(doc(db, "todos", todo.id));
-
-                setTodos((prev) => prev.filter((t) => t.id !== todo.id));
-              }}
-              className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Delete
-            </button>
-          </div>
+          <TodoItem
+            key={todo.id}
+            todo={todo}
+            filterTodo={filterTodo}
+            updateTodo={updateTodo}
+          />
         ))}
       </div>
 
